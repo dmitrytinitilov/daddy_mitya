@@ -1,0 +1,18 @@
+{
+  "name": "daddy_mitya",
+  "version": "0.0.1",
+  "description": "chat bot for manuals and tutorials",
+  "main": "app.js",
+  "dependencies": {
+    "eslint": "^3.19.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chat-bots"
+  ],
+  "author": "Dmitry Tinitlov",
+  "license": "MIT"
+}

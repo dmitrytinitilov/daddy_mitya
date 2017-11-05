@@ -1,0 +1,33 @@
+textarea {
+	outline:none;
+	resize: none;
+}
+
+.box {
+	width: 600px;
+	height: 420px;
+	background: lightgrey;
+	margin: 0 auto;
+	padding-top: 20px;
+}
+
+.talkbox {
+	width:560px;
+	height:260px;
+	margin: 0 auto;
+	display: block;
+}
+
+.user_speech {
+	width: 560px;
+	height: 100px;
+	margin:0 auto;
+	display: block;
+	margin-top: 20px;
+}
+
+.push_button {
+	width: 100px;
+	margin-left:calc(100% - 120px);
+}
+
