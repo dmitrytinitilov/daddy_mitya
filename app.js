@@ -138,10 +138,12 @@ app.get('/get_answer',function(req,res){
 		console.log('text: '+text);
 
 		replies.find({ $text: { $search: text }, ref_id:0}).toArray(function(err, items) {
+
 			console.log('Error '+err+' '+'Result '+util.inspect(items)+'\n');
 			if (items) {
 				var question_id = (items[0]._id).toString();
 				console.log('ref_id '+question_id+'\n');
+
 				replies.findOne({ref_id:question_id},function(err,ans_result){
 
 					console.log('Error '+err+' '+'Result '+util.inspect(ans_result));
