@@ -140,7 +140,7 @@ app.get('/get_answer',function(req,res){
 		replies.find({ $text: { $search: text }, ref_id:0}).toArray(function(err, items) {
 
 			console.log('Error '+err+' '+'Result '+util.inspect(items)+'\n');
-			if (items) {
+			if (items && items.length>0) {
 				var question_id = (items[0]._id).toString();
 				console.log('ref_id '+question_id+'\n');
 
