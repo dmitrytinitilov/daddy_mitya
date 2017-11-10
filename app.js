@@ -23,9 +23,6 @@ app.get('/chat',function(req,res){
 	res.render('chat');
 })
 
-app.get('/test_chat',function(req,res){
-	res.render('test_chat');
-})
 
 app.get('/push_phrase',function(req,res){
 
@@ -44,7 +41,7 @@ app.get('/push_phrase',function(req,res){
     	console.log("Connected!");
 
     	var replies = db.collection("replies");
-  		replies.insert({text:user_text,ref_id:ref_id,bot_id:0});
+  		replies.insert({text:user_text,ref_id:ref_id,bot_id:1});
 
   		res.end('Добавлено');
 
