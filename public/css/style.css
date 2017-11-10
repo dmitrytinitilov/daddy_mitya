@@ -1,6 +1,7 @@
 textarea {
 	outline:none;
 	resize: none;
+	border: 0px solid grey;
 }
 
 .box {
@@ -9,6 +10,7 @@ textarea {
 	background: lightgrey;
 	margin: 0 auto;
 	padding-top: 20px;
+	border-radius: 2px;
 }
 
 .talkbox {
@@ -16,6 +18,9 @@ textarea {
 	height:260px;
 	margin: 0 auto;
 	display: block;
+	background-color: white;
+	border-radius: 2px;
+
 }
 
 .user_speech {
@@ -24,10 +29,27 @@ textarea {
 	margin:0 auto;
 	display: block;
 	margin-top: 20px;
+	border-radius: 2px;
 }
 
 .push_button {
 	width: 100px;
 	margin-left:calc(100% - 120px);
+}
+
+.bot_reply {
+	width:80%;
+	background-color: cornflowerblue;
+	border-radius: 2px;
+	margin:2px;
+}
+
+.user_reply {
+	
+	width:80%;
+	background-color: lightgrey;
+	border-radius: 2px;
+	margin:2px;
+	margin-left:20%;
 }
 

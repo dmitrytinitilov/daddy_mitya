@@ -135,6 +135,8 @@ app.get('/get_answer',function(req,res){
 		var replies = db.collection("replies");
 		var text = req.query.text;
 
+		var ref_id = 0;
+
 		console.log('text: '+text);
 
 		replies.find({ $text: { $search: text }, ref_id:0}).toArray(function(err, items) {
@@ -158,9 +160,14 @@ app.get('/get_answer',function(req,res){
 					db.close();
 				})
 			} else {
+
+				replies.insert({text:text,ref_id:ref_id,bot_id:0},function(err){
+					db.close();
+				});
+
 				res.write('NO_ANSWER_ERROR');
 				res.end();
-				db.close();
+				
 			}
 
 		})
