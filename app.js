@@ -2,6 +2,10 @@
 var app = express();
 app.use(express.static('public'));
 
+const crypto = require('crypto');
+
+var cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 var util = require('util'); 
 
@@ -10,7 +14,6 @@ var host  = 'localhost';
 var port  = 27017;
 
 var ObjectId = require('mongodb').ObjectID;
-
 app.set('view engine', 'pug');
 
 var db = new mongo.Db('daddy_mitya', new mongo.Server(host, port, {}), {safe:false});
@@ -23,6 +26,11 @@ app.get('/chat',function(req,res){
 	res.render('chat');
 })
 
+app.get('/set_hash',function(req,res){
+
+	var token = crypto.randomBytes(64).toString('hex');
+	res.cookie('hash' , token).send('hash is set');
+})
 
 app.get('/push_phrase',function(req,res){
 
