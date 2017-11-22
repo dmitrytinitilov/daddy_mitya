@@ -19,7 +19,7 @@ app.set('view engine', 'pug');
 var db = new mongo.Db('daddy_mitya', new mongo.Server(host, port, {}), {safe:false});
 
 app.get('/', function(req,res){
-	res.end('Hello World!');
+	res.render('chat');
 });
 
 app.get('/chat',function(req,res){
@@ -28,8 +28,48 @@ app.get('/chat',function(req,res){
 
 app.get('/set_hash',function(req,res){
 
-	var token = crypto.randomBytes(64).toString('hex');
-	res.cookie('hash' , token).send('hash is set');
+	var generate_flag =false;
+
+	if (req.cookies.hash) {
+
+		db.open(function(err, db) {
+    		console.log("Connected!");
+
+    		var hashes = db.collection("hashes");
+			var old_hash = req.cookies.hash;
+
+			hashes.findOne({hash:old_hash},function(err,res_obj){
+
+				console.log("Hash error"+err+" "+"result"+res_obj);
+
+				if (err === null && res_obj==null) {
+					generate_flag=true;
+				}
+
+			})
+		})
+
+	} else {
+		generate_flag=true;
+	}
+
+
+	if (generate_flag) {
+
+		db.open(function(err, db) {
+    		console.log("Connected!");
+
+    		var token = crypto.randomBytes(64).toString('hex');
+    		var hashes = db.collection("hashes");
+
+    		hashes.insert({hash:token},function(err){
+    			res.cookie('hash' , token).send('hash is set');
+    		});
+    	})
+	} else {
+		res.send('you already have hash');
+	}
+
 })
 
 app.get('/push_phrase',function(req,res){
