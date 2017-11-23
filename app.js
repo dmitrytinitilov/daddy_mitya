@@ -28,47 +28,45 @@ app.get('/chat',function(req,res){
 
 app.get('/set_hash',function(req,res){
 
-	var generate_flag =false;
+	async function checkHash() {
 
-	if (req.cookies.hash) {
+		try {
+			var generate_flag =false;
+			db = await db.open();
+			if (req.cookies.hash) {
+			
+				var hashes = db.collection("hashes");
+				var old_hash = req.cookies.hash;
 
-		db.open(function(err, db) {
-    		console.log("Connected!");
+				doc = await hashes.findOne({hash:old_hash})
 
-    		var hashes = db.collection("hashes");
-			var old_hash = req.cookies.hash;
-
-			hashes.findOne({hash:old_hash},function(err,res_obj){
-
-				console.log("Hash error"+err+" "+"result"+res_obj);
-
-				if (err === null && res_obj==null) {
+				if (!doc) {
 					generate_flag=true;
 				}
+				
+			} else {
+				generate_flag=true;
+			}
 
-			})
-		})
+			if (generate_flag) {
+				var token = crypto.randomBytes(64).toString('hex');
+	    		var hashes = db.collection("hashes");
 
-	} else {
-		generate_flag=true;
+	    		await hashes.insert({hash:token});
+	    		res.cookie('hash' , token).send('hash is set');
+	    	}
+    		db.close();
+    		res.end('ops');
+
+    	} catch(e) {
+				console.log(e);
+		}
+
+		return 
 	}
 
-
-	if (generate_flag) {
-
-		db.open(function(err, db) {
-    		console.log("Connected!");
-
-    		var token = crypto.randomBytes(64).toString('hex');
-    		var hashes = db.collection("hashes");
-
-    		hashes.insert({hash:token},function(err){
-    			res.cookie('hash' , token).send('hash is set');
-    		});
-    	})
-	} else {
-		res.send('you already have hash');
-	}
+	checkHash();
+	
 
 })
 
