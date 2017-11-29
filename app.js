@@ -172,19 +172,24 @@ app.get('/make_index',function(req,res){
 
 app.get('/get_answer',function(req,res){
 
-	db.open(function(err,db){
+	(async function() {
 
-		res.set('Content-Type', 'text/html');
-		var replies = db.collection("replies");
-		var text = req.query.text;
+		try {
+			var generate_flag =false;
+			db = await db.open();
 
-		var ref_id = 0;
+			res.set('Content-Type', 'text/html');
+			var replies = db.collection("replies");
+			var text = req.query.text;
 
-		console.log('text: '+text);
+			var ref_id = 0;
 
-		replies.find({ $text: { $search: text }, ref_id:0}).toArray(function(err, items) {
+			console.log('text: '+text);
 
-			console.log('Error '+err+' '+'Result '+util.inspect(items)+'\n');
+
+			items = await replies.find({ $text: { $search: text }, ref_id:0}).toArray();
+
+			console.log('Result '+util.inspect(items)+'\n');
 			if (items && items.length>0) {
 				var question_id = (items[0]._id).toString();
 				console.log('ref_id '+question_id+'\n');
@@ -213,10 +218,12 @@ app.get('/get_answer',function(req,res){
 				
 			}
 
-		})
+		} catch(e) {
+				console.log(e);
+		}
 
-
-	})
+	})()
+	
 })
 
 
