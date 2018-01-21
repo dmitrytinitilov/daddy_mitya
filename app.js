@@ -1,22 +1,34 @@
-﻿var express = require('express');
+﻿const util = require('util');
+const crypto = require('crypto');
+var fs = require('fs');
+
+var express = require('express');
+var cookieParser = require('cookie-parser');
 var app = express();
+app.use(cookieParser());
 app.use(express.static('public'));
 
-const crypto = require('crypto');
+var bodyParser = require('body-parser')
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
-var cookieParser = require('cookie-parser');
-app.use(cookieParser());
-
-var util = require('util'); 
+app.set('view engine','pug');
 
 var mongo = require('mongodb');
 var host  = 'localhost';
 var port  = 27017;
-
 var ObjectId = require('mongodb').ObjectID;
-app.set('view engine', 'pug');
+var MongoClient = require('mongodb').MongoClient;
+var url = 'mongodb://localhost:27017';
 
-var db = new mongo.Db('daddy_mitya', new mongo.Server(host, port, {}), {safe:false});
+var multer  = require('multer')
+var upload = multer({ dest: 'public/uploads/' })
+
+//var tools = require('./tools');
+
+//var db = new mongo.Db('daddy_mitya', new mongo.Server(host, port, {}), {safe:false});
 
 app.get('/', function(req,res){
 	res.render('chat');
@@ -28,7 +40,7 @@ app.get('/chat',function(req,res){
 
 app.get('/set_hash',function(req,res){
 
-	async function checkHash() {
+	(async function() {
 
 		try {
 			var generate_flag =false;
@@ -63,11 +75,8 @@ app.get('/set_hash',function(req,res){
 		}
 
 		return 
-	}
-
-	checkHash();
+	})()
 	
-
 })
 
 app.get('/push_phrase',function(req,res){
@@ -83,16 +92,16 @@ app.get('/push_phrase',function(req,res){
 
 	console.log('USER TEXT',user_text);
 
-	db.open(function(err, db) {
-    	console.log("Connected!");
+	var database = await MongoClient.connect(url);
+	const db = database.db('daddy_mitya');
+	var replies = db.collection("replies");
 
-    	var replies = db.collection("replies");
-  		replies.insert({text:user_text,ref_id:ref_id,bot_id:1});
+	replies.insert({text:user_text,ref_id:ref_id,bot_id:1});
 
-  		res.end('Добавлено');
+	res.end('Добавлено');
 
-    	db.close();
-    })
+    database.close();
+    
 })
 
 app.get('/phrases',function(req,res){
