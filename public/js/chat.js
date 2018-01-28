@@ -20,7 +20,7 @@ function askQuestion() {
 
 	talkbox.innerHTML+=('<div class="user_reply">'+userSpeech.value+'<div>');
 
-	xhr.open("GET","/get_answer?text="+userSpeech.value,true);
+	xhr.open("GET","/api/get_bot_answer?text="+userSpeech.value,true);
 	xhr.send();
 	userSpeech.value = '';
 }
