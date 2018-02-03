@@ -21,24 +21,11 @@ var host  = 'localhost';
 var port  = 27017;
 var ObjectId = require('mongodb').ObjectID;
 
-/*var MongoClient = require('mongodb').MongoClient;
-var url = 'mongodb://localhost:27017';*/
-
-
-//var multer  = require('multer')
-//var upload = multer({ dest: 'public/uploads/' })
-
-//var tools = require('./tools');
-
-//var db = new mongo.Db('daddy_mitya', new mongo.Server(host, port, {}), {safe:false});
-
 
 (async function() {
 
 	try {
 
-		/*var database = await MongoClient.connect(url);
-		const db = database.db('daddy_mitya');*/
 		var getDb = require('./dbs');
 		db = await getDb();
 

@@ -1,5 +1,7 @@
 const util = require('util');
 
+var tools = require('./tools');
+
 module.exports = function(app, db) {
 
 
@@ -221,39 +223,108 @@ module.exports = function(app, db) {
 ///////  API
 ////////////////////////////////////////////////////////
 
+	app.get('/api/init_answers',function(req,res){
+
+		console.log('init answers');
+
+		(async function() {
+
+			try {
+				var replies = db.collection("replies");
+
+				items = await replies.find({}).toArray();
+
+				if (items && items.length>0) {
+
+					for (i=0;i<items.length;i++) {
+						var question_id = (items[i]._id).toString();
+
+						answers = await replies.find({ref_id:question_id}).toArray();
+
+						if (answers) {
+
+							var ans_num = 0 
+							if (answers.length)
+								ans_num = answers.length;
+
+							await replies.update({_id:items[i]._id},{$set:{answer_num:ans_num}},{ upsert: false, multi: true })
+													
+						}
+					}
+				}
+
+				res.end('Answers are ready');
+
+			} catch(e) {
+				console.log(e);
+			}
+
+		})()
+		
+	})
+
 
 	app.get('/api/get_bot_answer',function(req,res){
 
 		(async function() {
 
 			try {
-				var generate_flag =false;
-		
+
 				res.set('Content-Type', 'text/html');
 				var replies = db.collection("replies");
 				var text = req.query.text;
 
-				bot_id = 0;
+				var hash_obj = await tools.checkHash(req,res);
+				console.log(util.inspect(hash_obj)); 
+				var hash_id = hash_obj.hash_id;
+
+				var generate_flag = false;
+		
+				var bot_id = 0;
 				if (req.query.bot_id) {
-					bot_id = req.query.bot_id;
+					bot_id = parseInt(req.query.bot_id);
 				}
+
+				var user_bot_talks = db.collection("user_bot_talks");
 
 				var ref_id = 0;
 
-				console.log('text: '+text);
+				if (talk= await user_bot_talks.findOne({bot_id:bot_id,hash_id:hash_id})) {
+					ref_id = talk.ref_id;
+				} else {
+					await user_bot_talks.insert({bot_id:bot_id,hash_id:hash_id,ref_id:ref_id});
+				}
 
-				items = await replies.find({ $text: { $search: text }, ref_id:0, bot_id:bot_id}).toArray();
 
-				console.log('Result '+util.inspect(items)+'\n');
+				console.log('bot_id: ' + util.inspect(bot_id));
+
+				//YOU HAVE TO CHECK IF BASE ALREADY HAD SUCH REPLY
+
+				var items = await replies.find({ $text: { $search: text }, ref_id:ref_id, bot_id:bot_id, answer_num:{$gt:0}}).toArray();
+
+				console.log('Questions '+util.inspect(items)+'\n');
+
+				if (!(items && items.length>0)) {
+					await replies.insert({text:text,ref_id:ref_id,bot_id:bot_id,answer_num:0})
+
+					ref_id =0;
+					var items = await replies.find({ $text: { $search: text }, ref_id:0, bot_id:bot_id, answer_num:{$gt:0}}).toArray();
+
+					console.log('General Questions '+util.inspect(items)+'\n');
+				}
+
 				if (items && items.length>0) {
 					var question_id = (items[0]._id).toString();
 					console.log('ref_id '+question_id+'\n');
 
 					ans_result = await replies.findOne({ref_id:question_id});
 
-					console.log('Error '+err+' '+'Result '+util.inspect(ans_result));
+					console.log('Answers '+util.inspect(ans_result));
+
+					ref_id = question_id; // new reply
 
 					if (ans_result) {
+
 						res.write(ans_result.text);
 					} else {
 						res.write('NO_ANSWER_ERROR');
@@ -263,26 +334,24 @@ module.exports = function(app, db) {
 					
 				} else {
 
-					replies.insert({text:text,ref_id:ref_id,bot_id:0},function(err){
-						//db.close();
-					});
+					await replies.insert({text:text,ref_id:0,bot_id:bot_id,answer_num:0})
 
 					res.write('NO_ANSWER_ERROR');
 					res.end();
 					
 				}
 
+				console.log('You stopped on '+ref_id);
+
+				await user_bot_talks.update({hash_id:hash_id,bot_id:bot_id},{$set:{ref_id:ref_id}})
+
 			} catch(e) {
-					console.log(e);
+				console.log(e);
 			}
 
 		})()
 		
 	})
-
-
-
-
 
 
 	return app
