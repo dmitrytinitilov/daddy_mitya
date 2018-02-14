@@ -37,41 +37,50 @@ module.exports = function(app, db) {
 	app.get('/\:\::quad_slug',function(req,res){
 
 		(async function() {
-			console.log('slug '+req.params.quad_slug);
-			var quad_bot_str = req.params.quad_slug;
 
-			var quad_bot_arr = quad_bot_str.match(/^(\w+)(@(\w*))?$/);
+			try {
+				console.log('slug '+req.params.quad_slug);
+				var quad_bot_str = req.params.quad_slug;
 
-			console.log(util.inspect(quad_bot_arr));
+				var quad_bot_arr = quad_bot_str.match(/^(\w+)(@(\w*))?$/);
 
-			var quad_slug = quad_bot_arr[1];
-			var bot_nick  = quad_bot_arr[3];
+				console.log(util.inspect(quad_bot_arr));
 
-			if (bot_nick) {
-				//res.render('Bot: '+bot_nick);
-				//res.end('Bot: '+bot_nick);
-				res.render('bot.pug',{bot_nick:bot_nick});
-			} else {
+				var quad_slug = quad_bot_arr[1];
+				var bot_nick  = quad_bot_arr[3];
 
-				var quads = db.collection("quads");
-				var bots_on_quads = db.collection("bots_on_quads");
+				if (bot_nick) {
+					//res.render('Bot: '+bot_nick);
+					//res.end('Bot: '+bot_nick);
+					res.render('bot.pug',{bot_nick:bot_nick});
+				} else {
 
-				var quad_obj = await quads.findOne({slug:quad_slug});
-				bots = await bots_on_quads.find({quad_slug:quad_slug}).toArray();
+					var quads = db.collection("quads");
+					var bots_on_quads = db.collection("bots_on_quads");
 
-				//console.log('quad_obj '+util.inspect(quad_obj));
-				console.log('quad_obj '+util.inspect(quad_obj));
+					var quad_obj = await quads.findOne({slug:quad_slug});
+					bots = await bots_on_quads.find({quad_slug:quad_slug}).toArray();
 
-				res.render('quad',{quad_obj:quad_obj,bots:bots});
+					//console.log('quad_obj '+util.inspect(quad_obj));
+					console.log('quad_obj '+util.inspect(quad_obj));
+
+					res.render('quad',{quad_obj:quad_obj,bots:bots});
+				}
+			} catch(e) {
+				console.log(e);
 			}
 		})()
 	})
 
-	app.get('/questions_to_bot',function(req,res)) {
+	app.get('/questions_to_bot',function(req,res) {
 		(async function() {
-			res.render('questions');
+			try {
+				res.render('questions',{bot_nick:'daddy_mitya'});
+			} catch(e) {
+				console.log(e);
+			}
 		})()
-	}
+	})
 
 
 	

@@ -400,7 +400,7 @@ module.exports = function(app, db) {
 
 				var bots = db.collection("bots");
 				var replies = db.collection("replies");
-				var bot_id =0;
+				var bot_id = 0;
 
 				if (req.query.bot_nick) {
 					bot_nick = req.query.bot_nick;
@@ -427,7 +427,7 @@ module.exports = function(app, db) {
 
 					res.end(JSON.stringify(questions));
 				} else {
-					res.end('{"error":"NO DATA"}');
+					res.end('{"error":"NO DATA. LOGIN PLEASE"}');
 				}
 				
 			} catch(e) {
@@ -488,7 +488,7 @@ module.exports = function(app, db) {
 
 					var question = await replies.find({_id:ObjectId(ref_id)});
 				}
-				
+
 				var bot_nick  = req.query.bot_nick;
 
 				bot= await bots.findOne({nick:bot_nick})

@@ -1,6 +1,10 @@
 link(href='/css/style.css' rel='stylesheet')
 div(class="box")=bot_nick
 	div(class="talkbox")
-	textarea(class="user_speech")
-	button(class="push_button") Написать
-script(src='/js/bot.js')
+	input#botNickValue(type='hidden',value=bot_nick)
+	
+script(src='/js/questions.js')
+script.
+	botNick=botNickValue.value;
+	BotQuestions.init(botNick);
+	BotQuestions.loadQuestions();
