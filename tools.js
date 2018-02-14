@@ -11,14 +11,9 @@ module.exports = {
 			var hash_id=0;
 			
 			var generate_flag =false;
-
-			var database = await MongoClient.connect(mongo_url);
-			const db = database.db('quad');
-			
+				
 			var hashes = db.collection('hashes');
-			console.log('hashes '.hashes);
-
-			
+			console.log('hashes: '.hashes);
 
 			var old_hash;
 			if (req.cookies.hash) {
@@ -32,6 +27,7 @@ module.exports = {
 					generate_flag=true;
 				} else {
 					hash_id = doc._id;
+					user_id = doc.user_id;
 				}
 				
 			} else {
@@ -39,20 +35,18 @@ module.exports = {
 			}
 
 			if (generate_flag) {
+				user_id = 0;
 				var token = crypto.randomBytes(64).toString('hex');
 				old_hash = token;
 	    		
 
-	    		var doc = await hashes.insert({hash:token});
+	    		var doc = await hashes.insert({hash:token,user_id:user_id});
 	    		hash_id = doc._id;
 	    		res.cookie('hash' , token);
 	    		//res.end('cookie is set');
-	    	} /*else {
-	    		res.end('you already have a cookie');
-	    	}*/
-    		database.close();
+	    	} 
     		
-			return {hash_id:hash_id,hash:old_hash};
+			return {hash_id:hash_id,hash:old_hash,user_id:user_id};
 
     	} catch(e) {
 			console.log(e);

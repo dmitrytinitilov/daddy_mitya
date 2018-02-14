@@ -1,0 +1,11 @@
+link(href='/css/style.css' rel='stylesheet')
+div(class="box")=quad_obj.name
+	div(class="talkbox")=quad_obj.description
+	ul
+		each bot in bots
+			li
+				a(href='::'+quad_obj.slug+'@'+bot.bot_nick)=bot.bot_nick
+	form(method="GET" action="/api/add_bot_to_quad")
+		input(type="text" name="bot_nick" placeholder="bot_nick")
+		input(type="hidden",name="quad_slug",value=quad_obj.slug)
+		input(type="submit" value="Добавить")

@@ -32,6 +32,9 @@ var ObjectId = require('mongodb').ObjectID;
 		var routes = require('./routes');
 		app = routes(app, db);
 
+		var api = require('./api');
+		app = api(app, db);
+
 		var server = app.listen(8081,function(){
 			var host = server.address().address;
 			var port = server.address().port;

@@ -7,122 +7,12 @@ var tools = require('./tools');
 
 module.exports = function(app, db) {
 
-	var bodyParser = require('body-parser')
-	app.use(bodyParser.json());
-	app.use(bodyParser.urlencoded({
-	  extended: true
-	}));
-
-
-	app.get('/', function(req,res){
-		res.render('chat');
-	});
-
-	app.get('/invite',function(req,res){
-		res.render('invite');
-	})
-
-	app.get('/login',function(req,res){
-		res.render('login');
-	})
-
-	app.get('/create_bot',function(req,res){
-		res.render('create_bot_form');
-	})
-
-	app.get('/create_quad',function(req,res){
-		res.render('create_quad');
-	})
-
-	app.get('/\:\::quad_slug',function(req,res){
-
-		(async function() {
-			console.log('slug '+req.params.quad_slug);
-			var quad_bot_str = req.params.quad_slug;
-
-			var quad_bot_arr = quad_bot_str.match(/^(\w+)(@(\w*))?$/);
-
-			console.log(util.inspect(quad_bot_arr));
-
-			var quad_slug = quad_bot_arr[1];
-			var bot_nick  = quad_bot_arr[3];
-
-			if (bot_nick) {
-				//res.render('Bot: '+bot_nick);
-				//res.end('Bot: '+bot_nick);
-				res.render('bot.pug',{bot_nick:bot_nick});
-			} else {
-
-				var quads = db.collection("quads");
-				var bots_on_quads = db.collection("bots_on_quads");
-
-				var quad_obj = await quads.findOne({slug:quad_slug});
-				bots = await bots_on_quads.find({quad_slug:quad_slug}).toArray();
-
-				//console.log('quad_obj '+util.inspect(quad_obj));
-				console.log('quad_obj '+util.inspect(quad_obj));
-
-				res.render('quad',{quad_obj:quad_obj,bots:bots});
-			}
-		})()
-	})
-
-	app.get('/questions_to_bot',function(req,res)) {
-		(async function() {
-			res.render('questions');
-		})()
-	}
-
-
-	
-	app.get('/phrases',function(req,res){
-		db.open(function(err,db) {
-
-			var replies = db.collection("replies");
-
-			res.set('Content-Type', 'text/html');
-
-			replies.find().toArray(function(err, items) {
-				console.log(items);
-				for (i=0;i<items.length;i++) {
-					res.write((items[i]._id).toString()+' ');
-					res.write((items[i].ref_id).toString()+' ');
-
-					if (items[i].text)
-						res.write((items[i].text).toString());
-
-					res.write('<a href="/get_phrase?id='+ items[i]._id +'">');
-						res.write('[edit]');
-					res.write('</a>');
-					res.write('<br>');
-				}
-				res.end();
-				db.close();
-			})
-		})
-	})
-
-	
-
-	app.get('/make_index',function(req,res){
-
-		db.open(function(err,db){
-			var replies = db.collection("replies");
-
-			replies.createIndex({ text: "text" },function(err,res){
-				res.end('index построен');
-				db.close();
-			})
-		})
-
-	})
-
 
 ////////////////////////////////////////////////////////
 ///////  API
 ////////////////////////////////////////////////////////
 
-	/*app.get('/api/init_answers',function(req,res){
+	app.get('/api/init_answers',function(req,res){
 
 		console.log('init answers');
 
@@ -257,6 +147,7 @@ module.exports = function(app, db) {
 
 				console.log('Making bot');
 				var bots = db.collection("bots");
+				var nick = req.body.nick;
 				var name = req.body.name;
 				var description = req.body.description;
 
@@ -265,7 +156,7 @@ module.exports = function(app, db) {
 				var done_flag = false;
 
 				if (hash_obj.user_id!=0) {
-					bots.insert({name:name,description:description,owner_id:hash_obj.user_id});
+					bots.insert({nick:nick,name:name,description:description,owner_id:hash_obj.user_id});
 					done_flag = true;
 				}
 
@@ -298,7 +189,14 @@ module.exports = function(app, db) {
 				var done_flag = false;
 
 				if (hash_obj.user_id!=0) {
-					quads.insert({name:name,description:description,slug:slug,owner_id:hash_obj.user_id});
+					$ins_obj =  {
+									name:name,
+									description:description,
+									slug:slug,
+									owner_id:hash_obj.user_id
+								}
+
+					quads.insert($ins_obj);
 					done_flag = true;
 				}
 
@@ -315,6 +213,44 @@ module.exports = function(app, db) {
 
 	})
 	
+	app.get('/api/add_bot_to_quad',function(req,res){
+
+		(async function() {
+
+			try {
+
+				var hash_obj = await tools.checkHash(req,res);
+
+				var bots_on_quads = db.collection("bots_on_quads");
+				var bots = db.collection("bots");
+				var quads = db.collection("quads");
+				console.log('bot nick '+req.query.bot_nick);
+				console.log('quad slug '+req.query.quad_slug);
+
+				var bot_nick = req.query.bot_nick;
+				var quad_slug = req.query.quad_slug;
+
+				var bot = await bots.findOne({nick:bot_nick});
+				var quad = await quads.findOne({nick:quad_slug});
+
+				if (bot.owner_id === hash_obj.user_id && quad.owner_id === hash_obj.user_id) {
+					$ins_obj =  {
+									bot_nick:bot_nick,
+									quad_slug:quad_slug
+								}
+
+					await bots_on_quads.insert($ins_obj);
+				}
+				
+				res.redirect('/::'+quad_slug);
+				
+			} catch(e) {
+				console.log(e);
+			}
+
+		})()
+		
+	})
 
 
 	app.get('/api/get_bot_answer',function(req,res){
@@ -322,8 +258,9 @@ module.exports = function(app, db) {
 		(async function() {
 
 			try {
-
 				res.set('Content-Type', 'text/html');
+
+				var bots = db.collection("bots");
 				var replies = db.collection("replies");
 				var text = req.query.text;
 
@@ -334,10 +271,16 @@ module.exports = function(app, db) {
 				var generate_flag = false;
 		
 				var bot_id = 0;
-				if (req.query.bot_id) {
-					bot_id = parseInt(req.query.bot_id);
+				if (req.query.bot_nick) {
+					bot_nick = req.query.bot_nick;
+
+					bot= await bots.findOne({nick:bot_nick})
+					if (bot) {
+						bot_id = bot._id.toString();
+					}
 				}
 
+				//watch on which reply current user stops
 				var user_bot_talks = db.collection("user_bot_talks");
 
 				var ref_id = 0;
@@ -345,23 +288,52 @@ module.exports = function(app, db) {
 				if (talk= await user_bot_talks.findOne({bot_id:bot_id,hash_id:hash_id})) {
 					ref_id = talk.ref_id;
 				} else {
-					await user_bot_talks.insert({bot_id:bot_id,hash_id:hash_id,ref_id:ref_id});
-				}
+					var $ins_obj = {
+									bot_id:bot_id,
+									hash_id:hash_id,
+									ref_id:ref_id
+								}
 
+					await user_bot_talks.insert($ins_obj);
+				}
 
 				console.log('bot_id: ' + util.inspect(bot_id));
 
 				//YOU HAVE TO CHECK IF BASE ALREADY HAD SUCH REPLY
 
-				var items = await replies.find({ $text: { $search: text }, ref_id:ref_id, bot_id:bot_id, answer_num:{$gt:0}}).toArray();
+				var $find = {
+								$text: { $search: text },
+								ref_id:ref_id,
+								to_bot_id:bot_id,  //replies to this bot
+								answer_num:{$gt:0}
+							}
+				var items = await replies.find($find).toArray();
 
 				console.log('Questions '+util.inspect(items)+'\n');
 
 				if (!(items && items.length>0)) {
-					await replies.insert({text:text,ref_id:ref_id,bot_id:bot_id,answer_num:0})
 
+					if (ref_id!=0) {
+						$ins_obj =  {
+										text:text,
+									 	ref_id:ref_id,
+									 	to_bot_id:bot_id,
+									 	bot_id:0,   //because use is not a bot
+									 	answer_num:0
+									}
+
+						await replies.insert($ins_obj)
+					}
 					ref_id =0;
-					var items = await replies.find({ $text: { $search: text }, ref_id:0, bot_id:bot_id, answer_num:{$gt:0}}).toArray();
+
+					$find = {
+								$text: { $search: text },
+								ref_id:0,
+								bot_id:bot_id,
+								answer_num:{$gt:0}
+							}
+
+					var items = await replies.find($find).toArray();
 
 					console.log('General Questions '+util.inspect(items)+'\n');
 				}
@@ -377,17 +349,23 @@ module.exports = function(app, db) {
 					ref_id = question_id; // new reply
 
 					if (ans_result) {
-
 						res.write(ans_result.text);
 					} else {
 						res.write('NO_ANSWER_ERROR');
 					}
 
 					res.end();
-					
 				} else {
 
-					await replies.insert({text:text,ref_id:0,bot_id:bot_id,answer_num:0})
+					//adding reply to global context
+					$ins_obj =  {
+									text:text,
+									ref_id:0,
+									to_bot_id:bot_id,
+									answer_num:0
+								}
+
+					await replies.insert($ins_obj)
 
 					res.write('NO_ANSWER_ERROR');
 					res.end();
@@ -396,7 +374,14 @@ module.exports = function(app, db) {
 
 				console.log('You stopped on '+ref_id);
 
-				await user_bot_talks.update({hash_id:hash_id,bot_id:bot_id},{$set:{ref_id:ref_id}})
+				//updating phrase on which current user stops
+				await user_bot_talks.update({
+												hash_id:hash_id,
+												bot_id:bot_id
+											},
+											{
+												$set:{ref_id:ref_id}
+											})
 
 			} catch(e) {
 				console.log(e);
@@ -405,7 +390,123 @@ module.exports = function(app, db) {
 		})()
 		
 	})
-*/
+
+	app.get('/api/get_questions_to_bot',function(req,res){
+
+		(async function() {
+
+			try {
+				res.header("Content-Type", "application/json; charset=utf-8");
+
+				var bots = db.collection("bots");
+				var replies = db.collection("replies");
+				var bot_id =0;
+
+				if (req.query.bot_nick) {
+					bot_nick = req.query.bot_nick;
+
+					console.log('Hey do you need '+bot_nick+' bot?');
+
+					bot= await bots.findOne({nick:bot_nick})
+					if (bot) {
+						bot_id = bot._id.toString();
+						owner_id = bot.owner_id;
+					}
+					console.log('You got bot_id'+bot_id);
+				}
+
+				var hash_obj = await tools.checkHash(req,res);
+			
+				if (bot_id && owner_id && owner_id === hash_obj.user_id) {
+					var $find = {								
+								to_bot_id:bot_id,  //replies to this bot
+								answer_num:{$eq:0}
+							}
+
+					var questions = await replies.find($find).toArray();
+
+					res.end(JSON.stringify(questions));
+				} else {
+					res.end('{"error":"NO DATA"}');
+				}
+				
+			} catch(e) {
+				console.log(e);
+			}
+		})()
+	})
+
+	app.get('/api/get_reply_by_id',function(req,res){
+
+		(async function() {
+
+			try {
+				res.header("Content-Type", "application/json; charset=utf-8");
+				var hash_obj = await tools.checkHash(req,res);
+
+				var bots = db.collection("bots");
+				var replies = db.collection("replies");
+
+		    	var id = req.query.id;
+		    	console.log('id: '+id);
+				var reply = await replies.findOne({_id:ObjectId(id)})
+
+				var bot_id = reply.to_bot_id;
+				var bot = await bots.findOne({_id:ObjectId(bot_id)})
+				owner_id = bot.owner_id;
+
+				
+				if (owner_id === hash_obj.user_id) {
+					res.end(JSON.stringify(reply));
+				} else {
+					res.end('{"error":"reply is not yours or for you"}');
+				}
+
+			} catch(e) {
+				console.log(e);
+			}
+		})()
+	})
+
+
+	//needed to be tested
+	app.get('/api/add_answer_to_reply',function(req,res){
+
+		(async function() {
+
+			try {
+				res.header("Content-Type", "application/json; charset=utf-8");
+				var hash_obj = await tools.checkHash(req,res);
+
+				var replies = db.collection("replies");
+				var bots = db.collection("bots");
+
+				var user_text = req.query.text;
+				var ref_id = 0;
+				if (req.query.ref_id) {
+					ref_id = req.query.ref_id;
+
+					var question = await replies.find({_id:ObjectId(ref_id)});
+				}
+				
+				var bot_nick  = req.query.bot_nick;
+
+				bot= await bots.findOne({nick:bot_nick})
+				if (bot) {
+					bot_id = bot._id.toString();
+					owner_id = bot.owner_id;
+				}
+
+				if (ref_id!=0 && question && question.to_bot_id === bot_id && bot.owner_id === hash_obj.user_id) {
+					replies.insert({text:user_text,ref_id:ref_id,bot_id:bot_id,to_bot_id:0});
+				}
+
+			} catch(e) {
+				console.log(e);
+			}
+		})()
+	})
+
 
 	return app
 

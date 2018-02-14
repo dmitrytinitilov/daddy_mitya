@@ -1,0 +1,8 @@
+link(href='/css/style.css' rel='stylesheet')
+div(class="box")
+	form(action='/api/create_quad' method='POST')
+		input(type="text" placeholder="name" name="name")
+		input(type="text" placeholder="description" name="description")
+		input(type="text" placeholder="slug" name="slug")
+		input(type="file" placeholder="фон" name="background")
+		input(type="submit" value="submit")
