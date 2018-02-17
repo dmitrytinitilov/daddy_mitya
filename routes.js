@@ -75,7 +75,30 @@ module.exports = function(app, db) {
 	app.get('/questions_to_bot',function(req,res) {
 		(async function() {
 			try {
-				res.render('questions',{bot_nick:'daddy_mitya'});
+				var hash_obj = await tools.checkHash(req,res);
+
+				var render_flag = false;
+
+				console.log('user_id ' + hash_obj.user_id);
+
+				if (hash_obj.user_id) {
+					var bots = db.collection("bots");
+
+					var bot = await bots.findOne({owner_id:hash_obj.user_id});
+
+					if (bot) {
+						res.render('questions',{bot_nick:bot.nick});
+						render_flag = true;
+					} 
+
+					
+				} 
+
+				if (!render_flag) {
+					res.end('BEZ DATA. LOGIN PLEASE.');
+				}
+				
+				
 			} catch(e) {
 				console.log(e);
 			}

@@ -299,52 +299,64 @@ module.exports = function(app, db) {
 
 				console.log('bot_id: ' + util.inspect(bot_id));
 
-				//YOU HAVE TO CHECK IF BASE ALREADY HAD SUCH REPLY
-
-				var $find = {
-								$text: { $search: text },
-								ref_id:ref_id,
-								to_bot_id:bot_id,  //replies to this bot
-								answer_num:{$gt:0}
-							}
-				var items = await replies.find($find).toArray();
-
-				console.log('Questions '+util.inspect(items)+'\n');
-
-				if (!(items && items.length>0)) {
-
-					if (ref_id!=0) {
-						$ins_obj =  {
-										text:text,
-									 	ref_id:ref_id,
-									 	to_bot_id:bot_id,
-									 	bot_id:0,   //because use is not a bot
-									 	answer_num:0
-									}
-
-						await replies.insert($ins_obj)
-					}
-					ref_id =0;
-
-					$find = {
-								$text: { $search: text },
-								ref_id:0,
-								bot_id:bot_id,
-								answer_num:{$gt:0}
-							}
-
-					var items = await replies.find($find).toArray();
-
-					console.log('General Questions '+util.inspect(items)+'\n');
+				// CHECK IF BASE ALREADY HAD SUCH REPLY
+				var find = {
+					text:text,
+					ref_id:ref_id,
+					to_bot_id:bot_id
 				}
 
-				if (items && items.length>0) {
-					var question_id = (items[0]._id).toString();
+				console.log('check object '+util.inspect(find))
+
+				reply = await replies.findOne(find);
+
+				console.log(util.inspect(reply));
+
+				if (!reply) {
+					console.log('new reply inserted');
+					$ins_obj =  {
+						text:text,
+					 	ref_id:ref_id,
+					 	to_bot_id:bot_id,
+					 	bot_id:0,   //because use is not a bot
+					 	answer_num:0
+					}
+					await replies.insert($ins_obj)
+				}
+
+				//SEARCHING FOR SIMILAR REPLIES WITH ANSWERS
+			
+				var find = {
+					"$text": { "$search": text },
+					ref_id:ref_id,
+					to_bot_id:bot_id,  //replies to this bot
+					answer_num:{$gt:0}
+				}
+
+				console.log('search object '+util.inspect(find))
+
+				var question = await replies.findOne(find)
+				console.log("Similar question: "+util.inspect(question));
+
+				if (!question) {
+					find = {
+						"$text": { "$search": text },
+						to_bot_id:bot_id,
+						answer_num:{$gt:0}
+					}
+					var question = await replies.findOne(find);
+				}
+
+				console.log('Question: '+util.inspect(question)+'\n');
+				
+
+				if (question) {
+					var question_id = (question._id).toString();
 					console.log('ref_id '+question_id+'\n');
 
 					ans_result = await replies.findOne({ref_id:question_id});
 
-					console.log('Answers '+util.inspect(ans_result));
+					console.log('Answer '+util.inspect(ans_result));
 
 					ref_id = question_id; // new reply
 
@@ -353,21 +365,20 @@ module.exports = function(app, db) {
 					} else {
 						res.write('NO_ANSWER_ERROR');
 					}
-
 					res.end();
 				} else {
 
 					//adding reply to global context
-					$ins_obj =  {
+				/*	$ins_obj =  {
 									text:text,
 									ref_id:0,
 									to_bot_id:bot_id,
 									answer_num:0
 								}
 
-					await replies.insert($ins_obj)
+					await replies.insert($ins_obj)*/
 
-					res.write('NO_ANSWER_ERROR');
+					res.write('NO_ANSWER_AND_NO_QUESTION_ERROR');
 					res.end();
 					
 				}
@@ -486,19 +497,47 @@ module.exports = function(app, db) {
 				if (req.query.ref_id) {
 					ref_id = req.query.ref_id;
 
-					var question = await replies.find({_id:ObjectId(ref_id)});
+					var question = await replies.findOne({_id:ObjectId(ref_id)});
 				}
 
-				var bot_nick  = req.query.bot_nick;
+				if (req.query.bot_nick) {
+					var bot_nick  = req.query.bot_nick;
 
-				bot= await bots.findOne({nick:bot_nick})
-				if (bot) {
-					bot_id = bot._id.toString();
-					owner_id = bot.owner_id;
+					bot= await bots.findOne({nick:bot_nick})
+					if (bot) {
+						bot_id = bot._id.toString();
+						owner_id = bot.owner_id;
+					}
+				} else {
+					if (req.query.bot_id) {
+						var bot_id  = req.query.bot_id;
+
+						bot= await bots.findOne({_id:ObjectId(bot_id)})
+						if (bot) {
+							bot_nick = bot.nick;
+							owner_id = bot.owner_id;
+						}
+					}
+					
+
 				}
+				
+		/*		console.log('Adding answer: ');
+				console.log('ref_id '+ref_id);
+				console.log('bot_id '+bot_id);
 
-				if (ref_id!=0 && question && question.to_bot_id === bot_id && bot.owner_id === hash_obj.user_id) {
+				console.log('bot '+bot);
+				console.log('question to bot_id '+question.to_bot_id);
+				console.log('hash_obj.user_id '+hash_obj.user_id);
+		*/
+
+				if (ref_id!=0 && question && bot_id && question.to_bot_id === bot_id && bot.owner_id === hash_obj.user_id) {
 					replies.insert({text:user_text,ref_id:ref_id,bot_id:bot_id,to_bot_id:0});
+
+					replies.update({_id:ObjectId(ref_id)},{$inc:{answer_num:1}})
+					res.end('{"result":"Inserted"}');
+				} else {
+					res.end('{"result":"Rejected"}');
 				}
 
 			} catch(e) {
