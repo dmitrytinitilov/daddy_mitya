@@ -183,18 +183,20 @@ module.exports = function(app, db) {
 				var name = req.body.name;
 				var description = req.body.description;
 				var slug = req.body.slug;
+				var location = req.body.location;
 
 				var hash_obj = await tools.checkHash(req,res);
 
 				var done_flag = false;
 
 				if (hash_obj.user_id!=0) {
-					$ins_obj =  {
-									name:name,
-									description:description,
-									slug:slug,
-									owner_id:hash_obj.user_id
-								}
+					$ins_obj = {
+						name:name,
+						description:description,
+						slug:slug,
+						owner_id:hash_obj.user_id,
+						location:location
+					}
 
 					quads.insert($ins_obj);
 					done_flag = true;
@@ -289,10 +291,10 @@ module.exports = function(app, db) {
 					ref_id = talk.ref_id;
 				} else {
 					var $ins_obj = {
-									bot_id:bot_id,
-									hash_id:hash_id,
-									ref_id:ref_id
-								}
+						bot_id:bot_id,
+						hash_id:hash_id,
+						ref_id:ref_id
+					}
 
 					await user_bot_talks.insert($ins_obj);
 				}

@@ -1,0 +1,10 @@
+link(href='/css/style.css' rel='stylesheet')
+
+div(class="box")=bot_nick
+	div(class="talkbox")
+		ul
+			each quad in quads
+				li
+					a(href='::'+quad.slug)=quad.slug
+
+script(src='/js/client.js')

@@ -15,7 +15,18 @@ module.exports = function(app, db) {
 
 
 	app.get('/', function(req,res){
-		res.render('chat');
+		(async function() {
+
+			try {
+				var quads = db.collection("quads");
+
+				var local_quads = await quads.find({location:'odessa'}).toArray();
+
+				res.render('start',{quads:local_quads});
+			} catch(e) {
+				console.log(e);
+			}
+		})()
 	});
 
 	app.get('/invite',function(req,res){
